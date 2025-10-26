@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>16.money — Portfolio</title>
+  <style>
+    :root{
+      --bg:#071018;
+      --panel:#0b1720;
+      --accent:#39ff14;
+      --muted:#7a8a92;
+      --alert:#ff4242;
+      --glass: rgba(255,255,255,0.03);
+      --card:#0f1720;
+      font-size:16px;
+    }
+
+    html,body{height:100%;margin:0;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace;background:var(--bg);color:var(--accent);-webkit-font-smoothing:antialiased}
+
+    /* terminal */
+    .shell-wrap{max-width:1100px;margin:28px auto;position:relative}
+    .terminal-shell{
+      box-sizing:border-box;padding:20px;border-radius:12px;background:linear-gradient(180deg,var(--panel),#07161f);box-shadow:0 20px 50px rgba(2,6,12,0.7), inset 0 1px 0 rgba(255,255,255,0.02);
+      border:1px solid rgba(255,255,255,0.03);min-height:70vh;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden;transform-origin:center;transition:transform .7s cubic-bezier(.2,.9,.2,1),opacity .5s
+    }
+    .terminal-shell.exiting{transform:scale(.98) translateY(-20px);opacity:0}
+
+    .term-header{display:flex;align-items:center;gap:10px}
+    .dots{display:flex;gap:6px}
+    .dot{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.06)}
+    .dot.red{background:#ff5f56}
+    .dot.yellow{background:#ffbd2e}
+    .dot.green{background:#27c93f}
+
+    .term-body{flex:1;padding:12px 10px;overflow:auto;line-height:1.45}
+
+    .line{white-space:pre-wrap;font-size:0.95rem}
+    .prompt{color:var(--muted)}
+    .cursor{display:inline-block;width:10px;height:18px;background:var(--accent);margin-left:6px;vertical-align:middle;animation:blink 1s steps(2) infinite}
+    @keyframes blink{50%{opacity:0}}
+
+    .status{font-size:0.88rem;color:var(--muted);margin-top:6px}
+
+    /* alert */
+    .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+    .alert{width:min(680px,94%);background:white;border-radius:12px;padding:18px;border:2px solid rgba(255,65,65,0.08);box-shadow:0 30px 60px rgba(0,0,0,0.7);transform:translateY(-20px) scale(0.98);opacity:0;transition:all .38s cubic-bezier(.2,.9,.2,1);pointer-events:auto;color:#111}
+    .alert.show{transform:translateY(0) scale(1);opacity:1}
+    .alert-head{display:flex;align-items:center;gap:12px}
+    .alert-icon{width:56px;height:56px;border-radius:8px;background:linear-gradient(180deg,#ff6b6b,#ff2e2e);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:20px;box-shadow:0 8px 18px rgba(255,66,66,0.18)}
+    .alert-title{font-size:1.05rem;color:#111}
+    .alert-body{margin-top:10px;color:#333}
+    .alert-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+    .btn{padding:10px 14px;border-radius:8px;border:0;cursor:pointer;font-weight:600}
+    .btn-primary{background:var(--accent);color:#002;box-shadow:0 10px 30px rgba(57,255,20,0.06)}
+    .btn-danger{background:transparent;color:var(--alert);border:1px solid rgba(255,66,66,0.18)}
+
+    /* home page */
+    .home{position:fixed;inset:0;background:linear-gradient(180deg,#071018 0%, #021014 60%);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s}
+    .home.visible{opacity:1;pointer-events:auto}
+    .home-card{width:min(1100px,96%);border-radius:12px;padding:26px;background:linear-gradient(180deg,#07161f,#07161f);box-shadow:0 30px 60px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.03);display:grid;grid-template-columns:1fr 360px;gap:20px}
+
+    .main-panel{padding:18px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:10px}
+    .status-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .chip{background:rgba(255,255,255,0.02);padding:8px 12px;border-radius:999px;font-weight:700;color:var(--muted)}
+
+    .big-title{font-size:1.6rem;color:var(--accent);margin-top:8px}
+    .brute-title{font-family:ui-monospace, monospace;letter-spacing:0.6px;cursor:pointer}
+    .subtext{color:var(--muted);margin-top:6px}
+
+    .bruteforce-area{margin-top:16px;background:linear-gradient(180deg,#08131a,#061116);padding:14px;border-radius:10px;min-height:140px;position:relative;overflow:hidden}
+    .bf-line{font-family:ui-monospace, monospace;font-size:0.95rem;line-height:1.4;color:#dbeeff}
+    .bf-highlight{color:#ffd700;font-weight:700}
+
+    .social-placeholder{margin-top:14px;border-top:1px dashed rgba(255,255,255,0.03);padding-top:12px;display:flex;gap:10px;align-items:center}
+    .social-placeholder .icons{display:flex;align-items:center;gap:10px}
+    .social-placeholder a{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.02);text-decoration:none;color:var(--muted)}
+
+    .info-card{padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);}
+    .info-row{display:flex;justify-content:space-between;gap:10px}
+    .muted{color:var(--muted);font-size:0.95rem}
+
+    /* keep IP in box */
+    #userIP, #userLocation{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+
+    /* mini terminal */
+    .mini-term{margin-top:12px;background:#031018;border:1px solid rgba(255,255,255,0.03);border-radius:8px;padding:10px;height:110px;overflow:auto;font-size:0.85rem}
+    .mini-term .mini-line{color:var(--muted);font-family:ui-monospace, monospace}
+
+    /* news ticker */
+    .ticker{position:fixed;left:0;right:0;bottom:0;background:#020509;border-top:1px solid rgba(255,255,255,0.02);padding:8px 0;color:var(--muted);font-weight:700}
+    .ticker-inner{max-width:1100px;margin:0 auto;overflow:hidden}
+    .ticker-track{display:inline-block;white-space:nowrap;padding-left:100%;animation:scroll 22s linear infinite}
+    @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+
+    /* responsive */
+    @media (max-width:900px){.home-card{grid-template-columns:1fr}.main-panel{order:2}.info-card{order:1}}
+  </style>
+</head>
+<body>
+  <div class="shell-wrap">
+    <main class="terminal-shell" id="terminal" aria-live="polite">
+      <div class="term-header">
+        <div class="dots">
+          <div class="dot red" aria-hidden></div>
+          <div class="dot yellow" aria-hidden></div>
+          <div class="dot green" aria-hidden></div>
+        </div>
+        <div style="margin-left:10px;color:var(--muted);font-weight:600">~ /portfolio — session</div>
+      </div>
+
+      <div class="term-body" id="termBody">
+        <div class="line prompt">Last login: <span id="lastLogin"></span></div>
+        <div class="line prompt">$ <span id="typedLine"></span><span class="cursor" id="cursor"></span></div>
+        <div id="output"></div>
+        <div class="status" id="status">Initializing...</div>
+      </div>
+
+      <div class="overlay" id="overlay" aria-hidden>
+        <div class="alert" id="alertBox" role="dialog" aria-modal="true" aria-labelledby="alertTitle">
+          <div class="alert-head">
+            <div class="alert-icon">!</div>
+            <div>
+              <div id="alertTitle" class="alert-title">CRITICAL SECURITY ALERT</div>
+              <div style="color:var(--muted);font-size:0.9rem;margin-top:4px">Suspicious activity detected</div>
+            </div>
+          </div>
+          <div class="alert-body" id="alertBody">
+            High-priority service anomaly detected on <strong>16.money</strong> — multiple unauthorized access attempts recorded. Immediate attention recommended.
+            <div style="margin-top:8px;color:var(--muted);font-size:0.9rem">If this is a mistake, click <em>Go to Home Page</em> to continue to the portfolio home.</div>
+          </div>
+          <div class="alert-actions">
+            <button class="btn btn-danger" id="dismissBtn">Dismiss</button>
+            <button class="btn btn-primary" id="homeBtn">Go to Home Page</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Home page (hidden initially) -->
+  <section class="home" id="home">
+    <div class="home-card" role="region" aria-label="Portfolio home">
+      <div class="main-panel">
+        <div class="status-row">
+          <div class="chip">System Online</div>
+          <div class="chip">Connections: <span id="connections">12/256</span></div>
+          <div class="chip">16.money: <span class="bf-highlight">ACTIVE</span></div>
+        </div>
+
+        <div class="big-title brute-title" id="mainTitle">16.money</div>
+        <div class="subtext">Portfolio hub — quick access to projects, socials and live telemetry.</div>
+
+        <div class="bruteforce-area" id="bfArea">
+          <!-- Visual faux "bruteforce" activity against 16.money (for show) -->
+          <div id="bfLines" aria-hidden>
+            <div class="bf-line">[16.money] attempt from <span class="bf-highlight">192.0.2.117</span> -> <span class="bf-highlight">FAILED</span></div>
+            <div class="bf-line">[16.money] auth vector: <span class="bf-highlight">password-spray</span> — trying vectors...</div>
+            <div class="bf-line">[16.money] status: <span class="bf-highlight">rate-limited</span></div>
+            <div class="bf-line">[monitor] logged 42 suspicious connections in last 5m</div>
+          </div>
+
+          <!-- small interactive terminal inside homepage -->
+          <div class="mini-term" id="miniTerm" tabindex="0" aria-label="Live console">
+            <div class="mini-line">$ mini-console ready — hover to simulate logs</div>
+          </div>
+        </div>
+
+        <div class="social-placeholder">
+          <div class="icons" aria-hidden>
+            <!-- SVG icons for Twitter and Telegram -->
+            <a href="https://twitter.com/N2V2" target="_blank" rel="noopener noreferrer" aria-label="Twitter" id="twIcon" title="Twitter">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                <path d="M22 5.92c-.64.28-1.33.47-2.05.56.74-.44 1.3-1.13 1.57-1.95-.69.41-1.45.7-2.26.86C18.27 4.6 17.37 4 16.34 4c-1.53 0-2.77 1.24-2.77 2.77 0 .22.03.44.07.65C10.46 7.33 7.13 5.6 5.05 3.02c-.24.42-.38.92-.38 1.45 0 .99.5 1.86 1.26 2.37-.47-.01-.92-.14-1.31-.36v.04c0 1.42 1.01 2.6 2.36 2.87-.25.07-.51.11-.78.11-.19 0-.38-.02-.56-.06.38 1.18 1.47 2.04 2.76 2.07C7.9 14.9 6.6 15.5 5.16 15.5c-.33 0-.65-.02-.96-.06C5.97 16.4 7.4 17 8.98 17c6.4 0 9.9-5.3 9.9-9.9v-.45c.68-.5 1.26-1.12 1.72-1.83-.62.28-1.28.47-1.96.56z" fill="currentColor"/>
+              </svg>
+            </a>
+
+            <a href="https://t.me/unrare" target="_blank" rel="noopener noreferrer" aria-label="Telegram" id="tgIcon" title="Telegram">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                <path d="M21.5 3.5L2.9 10.1c-.9.3-.9 1 .2 1.3l4.2 1.3 1.5 4.6c.2.7.8.9 1.4.5l2.3-1.7 4.7 3.4c.9.6 1.8.2 2.1-.8l3.8-17c.2-.9-.6-1.6-1.5-1.2z" fill="currentColor"/>
+              </svg>
+            </a>
+          </div>
+          <div class="muted">Social media</div>
+        </div>
+      </div>
+
+      <aside class="info-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong>Live Info</strong>
+          <span id="updatedAt" class="muted">Updated: --:--</span>
+        </div>
+        <div style="margin-top:12px" class="info-row">
+          <div>
+            <div style="font-weight:700">Location</div>
+            <div id="userLocation" class="muted">Detecting…</div>
+          </div>
+          <div>
+            <div style="font-weight:700">IP</div>
+            <div id="userIP" class="muted">Detecting…</div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px">
+          <div style="font-weight:700">About</div>
+          <div class="muted">Add project metadata, quick bio, or recent highlights here.</div>
+        </div>
+      </aside>
+
+    </div>
+  </section>
+
+  <!-- scrolling news ticker -->
+  <div class="ticker" aria-hidden="false">
+    <div class="ticker-inner">
+      <div class="ticker-track" id="tickerTrack">
+        <!-- ONLY these are placeholders: replace with real headlines -->
+        [ZACHXBT CALLS OUT LEDGER ON X FOR "BATTERY ISSUES"] • [ZELLE TO ALLOW STABLECOINS FOR INTL TRANSACTIONS] • [16.money] Unusual traffic patterns detected • [USER_LOCATION_PLACEHOLDER], IP [USER_IP_PLACEHOLDER] • [COINBASE IS BACK ONLINE AFTER AN 8-HOUR MAINTANANCE AND UPDATE] • 
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // small utilities & UI refs
+    const typedLine = document.getElementById('typedLine');
+    const cursor = document.getElementById('cursor');
+    const output = document.getElementById('output');
+    const status = document.getElementById('status');
+    const lastLogin = document.getElementById('lastLogin');
+    const overlay = document.getElementById('overlay');
+    const alertBox = document.getElementById('alertBox');
+    const homeBtn = document.getElementById('homeBtn');
+    const dismissBtn = document.getElementById('dismissBtn');
+    const terminal = document.getElementById('terminal');
+    const home = document.getElementById('home');
+
+    const userIPEl = document.getElementById('userIP');
+    const userLocationEl = document.getElementById('userLocation');
+    const updatedAtEl = document.getElementById('updatedAt');
+    const mainTitle = document.getElementById('mainTitle');
+    const miniTerm = document.getElementById('miniTerm');
+
+    const rand = (arr)=> arr[Math.floor(Math.random()*arr.length)];
+    const samples = [
+      "function init() { return \"ok\"; }",
+      "// TODO: rewrite the auth flow",
+      "const secret = generateKey(32);",
+      "deploying -> staging: success",
+      "fetch('/api/status').then(res => res.json())",
+      "// crypto: optimizing gas usage...",
+      "class Wallet { constructor(owner) { this.owner = owner } }",
+      "db.query('SELECT * FROM users WHERE active = 1')",
+      "/* system logs follow */",
+      "Socket connected: 192.168.0.12",
+      "new Promise((r)=> setTimeout(r,1000))",
+      "// build: 0.9.13 (stable)",
+      "verifySignature(tx, sig) // verification ok",
+      "// network: high latency — retrying...",
+      "console.log('hello world')",
+      "// access: restricted",
+      "// note: 16.money observed unusual traffic",
+    ];
+
+    (function setLastLogin(){
+      const d = new Date(); d.setMinutes(d.getMinutes() - Math.floor(Math.random()*10000)); lastLogin.textContent = d.toString();
+    })();
+
+    const typeText = (text, el, speed=18) => {
+      return new Promise(resolve => { let i=0; el.textContent=''; const t = setInterval(()=>{ el.textContent += text[i++] || ''; if(i>text.length){ clearInterval(t); resolve(); } }, speed); });
+    };
+
+    const appendLine = (txt, cls='line') => { const div = document.createElement('div'); div.className = cls; div.textContent = txt; output.appendChild(div); output.scrollTop = output.scrollHeight; };
+
+    let running = true;
+    async function runTerminal(){ status.textContent = 'Booting environment...'; await delay(600); await typeText('npm start -- --silent', typedLine); await delay(350); appendLine('> starting dev server...'); await delay(400); appendLine('> connecting to remote endpoints'); await delay(600); status.textContent = 'Streaming logs';
+
+      for(let i=0;i<40;i++){ if(!running) break; const s = rand(samples) + (Math.random()>0.8 ? ' // ' + randomHex(8) : ''); appendLine(s); if(i===8) status.textContent = 'Analyzing network frames...'; if(i===20) status.textContent = 'Scanning external services...'; await delay(120 + Math.random()*240); }
+      noiseLoop();
+    }
+
+    function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+    function randomHex(len){let s=''; const chars='abcdef0123456789'; for(let i=0;i<len;i++) s += chars[Math.floor(Math.random()*chars.length)]; return s;}
+
+    function noiseLoop(){ setInterval(()=>{ if(!running) return; const s = rand(samples) + (Math.random()>0.9 ? ' // ' + randomHex(6) : ''); appendLine(s); }, 1200 + Math.random()*1200); }
+
+    function scheduleAlert(after=7500){ setTimeout(()=>{ showAlert(); }, after); }
+    function showAlert(){ overlay.removeAttribute('aria-hidden'); alertBox.classList.add('show'); status.textContent = '!!! CRITICAL ALERT !!!'; running = false; }
+
+    dismissBtn.addEventListener('click', ()=>{ alertBox.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); status.textContent = 'Alert dismissed — resuming logs.'; running = true; noiseLoop(); });
+
+    // brute-title animation: simulates bruteforce/attempts while revealing '16.money'
+    let bruteRunning = false;
+    function bruteTitleEffect(finalText, speed=40){
+      if(bruteRunning) return;
+      bruteRunning = true;
+      const chars = 'abcdefghijklmnopqrstuvwxyz0123456789.-_@';
+      let display = finalText.split('').map(()=>'' );
+      let revealed = 0;
+      const interval = setInterval(()=>{
+        for(let i=0;i<finalText.length;i++){
+          if(Math.random() < 0.18 && revealed < finalText.length){
+            display[revealed] = finalText[revealed];
+            revealed++;
+          } else {
+            display[i] = chars[Math.floor(Math.random()*chars.length)];
+          }
+        }
+        mainTitle.textContent = display.join('');
+        if(revealed >= finalText.length){ clearInterval(interval); mainTitle.textContent = finalText; bruteRunning = false; }
+      }, speed);
+    }
+
+    // attach hover to main title
+    mainTitle.addEventListener('mouseenter', ()=>{ bruteTitleEffect('16.money', 35); });
+
+    // mini terminal behavior
+    let miniInterval = null;
+    function startMiniTerminal(){
+      if(miniInterval) return;
+      const lines = [
+        'auth check... OK', 'loading modules...', 'probe: 16.money -> response 403', 'retrying vector...', 'vector: common-words.txt', 'attempt: user: admin', 'attempt: pass: 123456', 'rate limit hit — sleeping'
+      ];
+      let idx = 0;
+      miniInterval = setInterval(()=>{
+        const div = document.createElement('div');
+        div.className = 'mini-line';
+        div.textContent = lines[idx++ % lines.length] + (Math.random()>0.8 ? ' // ' + randomHex(4) : '');
+        miniTerm.appendChild(div);
+        miniTerm.scrollTop = miniTerm.scrollHeight;
+        if(miniTerm.children.length > 30) miniTerm.removeChild(miniTerm.children[0]);
+      }, 420 + Math.random()*300);
+    }
+    function stopMiniTerminal(){ if(miniInterval){ clearInterval(miniInterval); miniInterval = null; } }
+
+    miniTerm.addEventListener('mouseenter', startMiniTerminal);
+    miniTerm.addEventListener('focus', startMiniTerminal);
+    miniTerm.addEventListener('mouseleave', stopMiniTerminal);
+    miniTerm.addEventListener('blur', stopMiniTerminal);
+
+    // Smooth transition to home page
+    homeBtn.addEventListener('click', ()=>{ terminal.classList.add('exiting'); setTimeout(()=>{ home.classList.add('visible'); updatedAtEl.textContent = 'Updated: ' + new Date().toLocaleTimeString(); // attempt to detect IP & location
+        fetch('https://ipapi.co/json/')
+          .then(r=>r.json())
+          .then(j=>{
+            userIPEl.textContent = j.ip || 'n/a';
+            userLocationEl.textContent = [j.city,j.region,j.country_name].filter(Boolean).join(', ');
+            // update ticker occurrence that references IP/location
+            const t = document.getElementById('tickerTrack');
+            t.innerHTML = t.innerHTML.replace('[USER_LOCATION_PLACEHOLDER]', userLocationEl.textContent).replace('[USER_IP_PLACEHOLDER]', userIPEl.textContent);
+          })
+          .catch(()=>{
+            userIPEl.textContent = 'n/a'; userLocationEl.textContent = 'Unknown';
+          })
+          .finally(()=>{
+            // start the bruteforce title effect when home is shown
+            bruteTitleEffect('16.money', 45);
+          });
+      }, 480);
+    });
+
+    // start
+    runTerminal(); scheduleAlert(9000);
+    (async function(){ await delay(2200); cursor.style.opacity='1'; await delay(6000); cursor.style.display='none'; })();
+
+    // accessibility: allow dismiss via escape
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ if(alertBox.classList.contains('show')) dismissBtn.click(); } });
+  </script>
+</body>
+</html>
